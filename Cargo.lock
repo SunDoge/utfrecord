@@ -59,7 +59,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "fastdata-tfrecord"
 version = "0.1.0"
-source = "git+https://github.com/SunDoge/fastdata.git?rev=eb8b45d#eb8b45d2b5eb4d62e0f1c238432d4dcf52aa31d5"
+source = "git+https://github.com/SunDoge/fastdata.git?rev=39b7f66#39b7f6614eba76a85a8f0ff8012cf5389ffa9b17"
 dependencies = [
  "bytes",
  "crc32c",
