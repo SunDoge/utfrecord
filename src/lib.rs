@@ -1,3 +1,4 @@
+pub mod example;
 pub mod reader;
 
 use pyo3::prelude::*;
