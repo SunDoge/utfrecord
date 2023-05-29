@@ -51,14 +51,34 @@ pub struct KanalReceiverParsed {
 #[pymethods]
 impl KanalReceiverParsed {
     #[new]
-    fn new(path: &str, channel_size: usize, keys: Vec<String>, check_integrity: bool) -> Self {
+    fn new(
+        paths: Vec<String>,
+        cycle: bool,
+        channel_size: usize,
+        keys: Vec<String>,
+        check_integrity: bool,
+    ) -> Self {
         let (sender, receiver) = kanal::bounded(channel_size);
-        let file = std::fs::File::open(path).unwrap();
-        let buf_reader = BufReader::new(file);
-        let reader = TfrecordReader::new(buf_reader, check_integrity);
+
         let handle = std::thread::spawn(move || {
-            for record in reader {
-                sender.send(record.unwrap()).unwrap();
+            if cycle {
+                for path in paths.iter().cycle() {
+                    let file = std::fs::File::open(path).unwrap();
+                    let buf_reader = BufReader::new(file);
+                    let reader = TfrecordReader::new(buf_reader, check_integrity);
+                    for record in reader {
+                        sender.send(record.unwrap()).unwrap();
+                    }
+                }
+            } else {
+                for path in paths.iter() {
+                    let file = std::fs::File::open(path).unwrap();
+                    let buf_reader = BufReader::new(file);
+                    let reader = TfrecordReader::new(buf_reader, check_integrity);
+                    for record in reader {
+                        sender.send(record.unwrap()).unwrap();
+                    }
+                }
             }
         });
         Self {

@@ -58,6 +58,7 @@ class TfrecordReaderParsed(IterDataPipe):
         self,
         datapipe: Iterable[str],
         keys: List[str],
+        use_cycle: bool = False,
         channel_size: int = 1024,
         check_integrity: bool = False,
         length: int = -1,
@@ -66,32 +67,34 @@ class TfrecordReaderParsed(IterDataPipe):
         self.datapipe = datapipe
         self.keys = keys
         self.length = length
-        self._channel_size = channel_size
-        self._check_integrity = check_integrity
+        self.use_cycle = use_cycle
+        self.channel_size = channel_size
+        self.check_integrity = check_integrity
 
     def __iter__(self) -> Iterator[Dict[str, Union[Tensor, List[Tensor]]]]:
 
-        for path in self.datapipe:
-            reader = _utfrecord.KanalReceiverParsed(
-                path, self._channel_size, self.keys, self._check_integrity
-            )
+        paths = list(self.datapipe)
 
-            try:
-                for example_dlpack in reader:
-                    # example = {from_dlpack(example_dlpack[k]) for k in self.keys}
-                    example = {}
-                    for key in self.keys:
-                        feat = example_dlpack[key]
-                        if isinstance(feat, list):
-                            example[key] = [from_dlpack(f) for f in feat]
-                        else:
-                            example[key] = from_dlpack(feat)
-                    yield example
+        reader = _utfrecord.KanalReceiverParsed(
+            paths, self.use_cycle, self.channel_size, self.keys, self.check_integrity
+        )
 
-            except RuntimeError as e:
-                warnings.warn(
-                    f"Unable to read from corrupted tfrecord stream {path} due to: {e}, abort!")
-                raise e
+        try:
+            for example_dlpack in reader:
+                # example = {from_dlpack(example_dlpack[k]) for k in self.keys}
+                example = {}
+                for key in self.keys:
+                    feat = example_dlpack[key]
+                    if isinstance(feat, list):
+                        example[key] = [from_dlpack(f) for f in feat]
+                    else:
+                        example[key] = from_dlpack(feat)
+                yield example
+
+        except RuntimeError as e:
+            warnings.warn(
+                f"Unable to read from corrupted tfrecord stream {path} due to: {e}, abort!")
+            raise e
 
     def __len__(self) -> int:
         if self.length == -1:
