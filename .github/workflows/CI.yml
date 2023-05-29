@@ -43,6 +43,7 @@ jobs:
           path: dist
 
   windows:
+    if: ${{ false }}  # disable for now
     runs-on: windows-latest
     strategy:
       matrix:
@@ -66,6 +67,7 @@ jobs:
           path: dist
 
   macos:
+    if: ${{ false }}  # disable for now
     runs-on: macos-latest
     strategy:
       matrix:
