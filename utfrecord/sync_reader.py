@@ -1,7 +1,7 @@
-from typing import Iterator
+
 from . import utfrecord as _utfrecord
 from torchdata.datapipes.iter import IterDataPipe
-from typing import Optional, Iterable, List, Dict, Union
+from typing import Optional, Iterable, List, Dict, Union, Iterator
 from torchdata.datapipes.iter.util.tfrecordloader import TFRecordExampleSpec, TFRecordExample, parse_tfrecord_sequence_example
 import warnings
 from torch.utils.dlpack import from_dlpack

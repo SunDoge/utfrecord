@@ -98,3 +98,61 @@ impl KanalReceiverParsed {
             .map(|buf| Python::with_gil(|py| parse_tfrecord(py, &buf, &slf.keys).into_py(py)))
     }
 }
+
+#[pyclass]
+pub struct IoUringTfrecordReader {
+    inner: kanal::Receiver<Vec<u8>>,
+    keys: Vec<String>,
+    _handle: std::thread::JoinHandle<()>,
+}
+
+#[pymethods]
+impl IoUringTfrecordReader {
+    #[new]
+    fn new(
+        paths: Vec<String>,
+        cycle: bool,
+        queue_depth: u32,
+        channel_size: usize,
+        keys: Vec<String>,
+        check_integrity: bool,
+    ) -> Self {
+        let (sender, receiver) = kanal::bounded(channel_size);
+
+        let handle = std::thread::spawn(move || {
+            let files = paths.into_iter().map(|p| std::fs::File::open(p).unwrap());
+            if cycle {
+                fastdata_tfrecord::async_reader::io_uring_multi_files::io_uring_loop(
+                    files.cycle(),
+                    queue_depth,
+                    check_integrity,
+                    |buf| sender.send(buf).unwrap(),
+                )
+                .unwrap();
+            } else {
+                fastdata_tfrecord::async_reader::io_uring_multi_files::io_uring_loop(
+                    files,
+                    queue_depth,
+                    check_integrity,
+                    |buf| sender.send(buf).unwrap(),
+                )
+                .unwrap();
+            }
+        });
+        Self {
+            inner: receiver,
+            _handle: handle,
+            keys,
+        }
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__<'a>(mut slf: PyRefMut<'a, Self>) -> Option<Py<PyDict>> {
+        slf.inner
+            .next()
+            .map(|buf| Python::with_gil(|py| parse_tfrecord(py, &buf, &slf.keys).into_py(py)))
+    }
+}
