@@ -3,8 +3,8 @@ from torchdata.datapipes.iter import IterDataPipe
 from typing import Optional, Iterable, List, Dict, Union, Iterator
 from torch import Tensor
 from . import utfrecord as _utfrecord
-from torch.utils.dlpack import from_dlpack
 import warnings
+from .utils import features_to_tensor
 
 
 class IoUringTfrecordReaderParsed(IterDataPipe):
@@ -27,30 +27,22 @@ class IoUringTfrecordReaderParsed(IterDataPipe):
         self.channel_size = channel_size
         self.check_integrity = check_integrity
         self.queue_depth = queue_depth
+        self.paths = list(datapipe)
 
     def __iter__(self) -> Iterator[Dict[str, Union[Tensor, List[Tensor]]]]:
 
-        paths = list(self.datapipe)
-
         reader = _utfrecord.IoUringTfrecordReader(
-            paths, self.use_cycle, self.queue_depth, self.channel_size, self.keys, self.check_integrity
+            self.paths, self.use_cycle, self.queue_depth, self.channel_size, self.keys, self.check_integrity
         )
 
         try:
             for example_dlpack in reader:
-                # example = {from_dlpack(example_dlpack[k]) for k in self.keys}
-                example = {}
-                for key in self.keys:
-                    feat = example_dlpack[key]
-                    if isinstance(feat, list):
-                        example[key] = [from_dlpack(f) for f in feat]
-                    else:
-                        example[key] = from_dlpack(feat)
+                example = features_to_tensor(example_dlpack)
                 yield example
 
         except RuntimeError as e:
             warnings.warn(
-                f"Unable to read from corrupted tfrecord stream {paths} due to: {e}, abort!")
+                f"Unable to read from corrupted tfrecord stream {self.paths} due to: {e}, abort!")
             raise e
 
     def __len__(self) -> int:
