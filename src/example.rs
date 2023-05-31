@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 
 use dlpark::prelude::*;
 use fastdata_tfrecord::tensorflow::{
@@ -24,7 +24,7 @@ pub fn parse_tfrecord<'a>(py: Python<'a>, example_bytes: &[u8], keys: &[String])
     dic
 }
 
-fn feature_to_pyobject<'a>(py: Python<'a>, feat: Feature) -> PyObject {
+fn feature_to_pyobject(py: Python<'_>, feat: Feature) -> PyObject {
     match feat.kind {
         Some(Kind::BytesList(BytesList { value })) => {
             let v: Vec<_> = value

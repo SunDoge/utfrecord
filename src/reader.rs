@@ -10,7 +10,7 @@ use crate::example::parse_tfrecord;
 #[pyclass]
 pub struct KanalReceiver {
     inner: kanal::Receiver<Vec<u8>>,
-    handle: std::thread::JoinHandle<()>,
+    _handle: std::thread::JoinHandle<()>,
 }
 
 #[pymethods]
@@ -28,7 +28,7 @@ impl KanalReceiver {
         });
         Self {
             inner: receiver,
-            handle,
+            _handle: handle,
         }
     }
 
@@ -45,7 +45,7 @@ impl KanalReceiver {
 pub struct KanalReceiverParsed {
     inner: kanal::Receiver<Vec<u8>>,
     keys: Vec<String>,
-    handle: std::thread::JoinHandle<()>,
+    _handle: std::thread::JoinHandle<()>,
 }
 
 #[pymethods]
@@ -83,7 +83,7 @@ impl KanalReceiverParsed {
         });
         Self {
             inner: receiver,
-            handle,
+            _handle: handle,
             keys,
         }
     }
@@ -92,7 +92,7 @@ impl KanalReceiverParsed {
         slf
     }
 
-    fn __next__<'a>(mut slf: PyRefMut<'a, Self>) -> Option<Py<PyDict>> {
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<Py<PyDict>> {
         slf.inner
             .next()
             .map(|buf| Python::with_gil(|py| parse_tfrecord(py, &buf, &slf.keys).into_py(py)))
@@ -150,7 +150,7 @@ impl IoUringTfrecordReader {
         slf
     }
 
-    fn __next__<'a>(mut slf: PyRefMut<'a, Self>) -> Option<Py<PyDict>> {
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<Py<PyDict>> {
         slf.inner
             .next()
             .map(|buf| Python::with_gil(|py| parse_tfrecord(py, &buf, &slf.keys).into_py(py)))
