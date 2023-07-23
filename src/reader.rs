@@ -1,6 +1,6 @@
 use std::io::BufReader;
 
-use dlpark::tensor::ManagerCtx;
+use dlpark::ManagerCtx;
 use fastdata_tfrecord::sync_reader::TfrecordReader;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
